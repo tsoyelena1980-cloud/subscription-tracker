@@ -191,7 +191,7 @@
   const CURRENCIES = {
     USD: { symbol: "$", code: "USD", rateToUSD: 1, position: "prefix" },
     EUR: { symbol: "€", code: "EUR", rateToUSD: 1.09, position: "prefix" },
-    RUB: { symbol: "₽", code: "RUB", rateToUSD: 0.011, position: "suffix" }
+    UZS: { symbol: "сум", symbolEn: "UZS", code: "UZS", rateToUSD: 0.000078, position: "suffix" }
   };
 
   const STATUS_META = {
@@ -592,14 +592,20 @@
   }
 
   function formatMoney(amount, currencyCode = "USD") {
-    const meta = CURRENCIES[currencyCode] || CURRENCIES.USD;
+    const normalizedCode = currencyCode === "RUB" ? "UZS" : currencyCode;
+    const meta = CURRENCIES[normalizedCode] || CURRENCIES.USD;
     const num = Number(amount) || 0;
-    const formatted = num % 1 === 0 ? num.toFixed(0) : num.toFixed(2);
-    return meta.position === "prefix" ? `${meta.symbol}${formatted}` : `${formatted} ${meta.symbol}`;
+    const isInt = num % 1 === 0;
+    const formatted = normalizedCode === "UZS"
+      ? Math.round(num).toLocaleString(currentLang === "en" ? "en-US" : "ru-RU")
+      : (isInt ? num.toFixed(0) : num.toFixed(2));
+    const sym = currentLang === "en" && meta.symbolEn ? meta.symbolEn : meta.symbol;
+    return meta.position === "prefix" ? `${sym}${formatted}` : `${formatted} ${sym}`;
   }
 
   function toMonthlyUSD(sub) {
-    const meta = CURRENCIES[sub.currency] || CURRENCIES.USD;
+    const normalizedCode = sub.currency === "RUB" ? "UZS" : sub.currency;
+    const meta = CURRENCIES[normalizedCode] || CURRENCIES.USD;
     const totalDays = daysBetween(sub.startDate, sub.endDate);
     const usdAmount = (Number(sub.price) || 0) * meta.rateToUSD;
     if (totalDays >= 330) return usdAmount / 12;
@@ -888,7 +894,7 @@
 
     form.name.value = sub.name;
     form.price.value = String(sub.price);
-    form.currency.value = sub.currency || "USD";
+    form.currency.value = sub.currency === "RUB" ? "UZS" : (sub.currency || "USD");
     form.startDate.value = sub.startDate;
     form.endDate.value = sub.endDate;
     form.status.value = sub.status || "auto";
